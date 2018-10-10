@@ -1,140 +1,174 @@
+<template>
+    <div class="form">
+        <h1>{{title}}</h1>
+        <form-wizard
+            backButtonText="Назад"
+            color="skyblue" 
+            error-color="#e74c3c"
+            @on-complete="complete"
+            @on-validate="completeStep"
+            nextButtonText="Далее" 
+            shape="circle"
+            stepSize="sm"
+            subtitle=""
+            ref="steps"
+            title=""
+        >
+            <tab-content 
+                :before-change="validateFirst"
+                icon="ti-user"
+                title="Выбор технологий" 
+            >
+                <vue-form-generator 
+                    :schema="firstSchema" 
+                    :model="formData" 
+                    :options="formOptions" 
+                    ref="firstForm" 
+                />
+                <div v-if="errorMessage">
+                    <span class="error">{{errorMessage}}</span>
+                </div>
+                <form class="extraFields" @submit.prevent="addField">
+                    <input v-model="newItem" />
+                    <button type="submit">+</button>  
+                </form>
+            </tab-content>
+            
+            <!-- Используем для последующих шагов первые два навыка -->
+            <tab-content 
+                :before-change="validateSkill"
+                v-for="skill in skills"
+                :key="skill"
+                :title="'Вопросы по ' + skill"
+            >
+                {{skill}}
+                <vue-form-generator 
+                    :schema="skillSchema" 
+                    :model="formData.details[skill]" 
+                    :options="formOptions" 
+                    :ref="skill + 'Form'" 
+                />
+            </tab-content>
+        </form-wizard>
+    </div>
+</template>
+
+
 <script>
 import Vue from 'vue'
+import {validators} from 'vue-form-generator'
 import {Component} from 'vue-property-decorator'
-
-//         schema: {
-//             fields: [{
-//                 type: "input",
-// 								inputType: "text",
-//                 label: "ID",
-//                 model: "id",
-//                 readonly: true,
-//                 featured: false,
-//                 disabled: true
-//             }, {
-//                 type: "input",
-// 								inputType: "text",
-//                 label: "Name",
-//                 model: "name",
-//                 readonly: false,
-//                 featured: true,
-//                 required: true,
-//                 disabled: false,
-//                 placeholder: "User's name",
-//                 validator: VueFormGenerator.validators.string
-//             }, {
-//                 type: "input",
-// 								inputType: "password",
-//                 label: "Password",
-//                 model: "password",
-//                 min: 6,
-//                 required: true,
-//                 hint: "Minimum 6 characters",
-//                 validator: VueFormGenerator.validators.string
-//             }, {
-//                 type: "input",
-//                 inputType: "number",
-//                 label: "Age",
-//                 model: "age",
-// 								min: 18,
-//                 validator: VueFormGenerator.validators.number
-//             }, {
-//                 type: "input",
-// 								inputType: "email",
-//                 label: "E-mail",
-//                 model: "email",
-//                 placeholder: "User's e-mail address",
-//                 validator: VueFormGenerator.validators.email
-//             }, {
-//                type: "switch",
-//                 label: "Status",
-//                 model: "status",
-//                 multi: true,
-//                 readonly: false,
-//                 featured: false,
-//                 disabled: false,
-//                 default: true,
-// 								textOn: "Active",
-// 								textOff: "Inactive"
-//             }],
-//         },
-
 
 
 export default @Component class App extends Vue {
-    newItem = ''
-    model = {
+    errorMessage = null
+    formData = {
+        details: {},
         skills: [],
     }
     firstSchema = {
         fields: [{
+            type: "input",
+            inputType: "number",
+            label: "Ваш возраст?",
+            model: "age",
+            max: 99,
+            min: 18,
+            required: true,
+            validator: validators.number,
+        }, {
+            type: "input",
+            inputType: "email",
+            label: "Есть ли у Вас адрес e-mail?",
+            model: "email",
+            placeholder: "e-mail",
+            validator: validators.email,
+        }, {
             label: 'Какие технологии Вы используете?',
             listBox: true,
             model: 'skills',
             required: true,
             type: 'checklist',
-            values: ['HTML5', 'Javascript', 'CSS3', 'CoffeeScript', 'AngularJS', 'ReactJS', 'VueJS']
+            values: ['HTML5', 'Javascript', 'ReactJS', 'VueJS'],
         }],
     }
     formOptions = {
         validateAfterLoad: true,
-        validateAfterChanged: true
+        validateAfterChanged: true,
+    }
+    newItem = ''
+    skillSchema = {
+        fields: [{
+            type: "input",
+            inputType: "number",
+            label: "Сколько лет используете?",
+            model: "age",
+            required: true,
+            validator: validators.number,
+        }, {
+            type: "switch",
+            label: "Удовлетворены ли Вы данной технологией?",
+            model: "happy",
+            required: true,
+            textOn: "да",
+            textOff: "нет",
+        }, {
+            type: "input",
+            inputType: "text",
+            label: "Комментарий",
+            model: "comment",
+            featured: true,
+            validator: validators.string,
+        }],
     }
     title = `Номер телефона: ${this.$attrs.phone}`
 
-    render() {
-        return <div class="form">
-            <h1>{this.title}</h1>
-            <form-wizard 
-                backButtonText="Назад"
-                color="skyblue" 
-                nextButtonText="Далее" 
-                on-validate={this.validate}
-                on-complete={this.complete}
-                on-change={this.complete}
-                shape="circle"
-                stepSize="sm"
-                subtitle=""
-                title=""
-            >
-                <tab-content 
-                    title="Выбор технологий" 
-                    // before-change={this.validate}
-                    // on-validate={this.validate}
-                >
-                    <vue-form-generator schema={this.firstSchema} model={this.model} options={this.formOptions} />
-                    <form onSubmit={this.addField}>
-                        <input v-model={this.newItem} />
-                        <button type="submit">+</button>  
-                    </form>
-                </tab-content>
-                
-                {/** Используем для последующих шагов первые два навыка */}
-                {this.model.skills.slice(0, 2).map(skill => <tab-content 
-                    title={`Вопросы по ${skill}`}
-                    on-validate={() => this.save()}
-                >
-                    <vue-form-generator schema={this.firstSchema} model={this.model} options={this.formOptions} />
-                </tab-content>)}
-            </form-wizard>
-        </div>
+    constructor() {
+        super()
+        this.firstSchema.fields.find(f => f.model === 'skills').values.forEach(skill => {
+            this.formData.details[skill] = {}
+        })
     }
-    addField(event) {
-        // alert(`${JSON.stringify(Object.keys(this.$options))} ${JSON.stringify(Object.keys(this.$attrs))}`)
-        event.preventDefault()
-        if(!this.newItem) return
 
-        this.firstSchema.fields[0].values.push(this.newItem)
-        this.model.skills.push(this.newItem)
+    get skills() {return this.formData.skills.slice(0, 2)}
+
+    addField(event) {
+        const skill = this.newItem
+        if(!skill) return
         this.newItem = ''
+
+        this.formData.details[skill] = {}
+        this.firstSchema.fields.find(f => f.model === 'skills').values.push(skill)
+        this.formData.skills.push(skill)
     }
+
     complete() {
-        alert('hello 2')
-        return true
+        alert('complete')
+        /** 
+            Отметить в базе данных запись как завершенную
+        */
     }
-    validate() {
-        alert('hello')
-        return true
+
+    validateFirst() {
+        if(this.skills.length) this.errorMessage = null
+        else this.errorMessage = 'Выберите хотя бы один навык'
+        return this.skills.length > 0 && this.$refs.firstForm.validate()
+    }
+
+    validateSkill() {
+        const skill = this.formData.skills[this.$refs.steps.activeTabIndex - 1]
+        return this.$refs[`${skill}Form`][0].validate()
+    }
+
+    completeStep(isValid, tabIndex) {
+        if(!isValid) return
+
+        const skill = this.formData.skills[tabIndex - 1]
+        if(tabIndex > 0) alert(skill)
+
+        /** 
+            Тут можно по необходимости сохранить промежуточный результат в базу
+        */
     }
 }
 
@@ -144,7 +178,20 @@ export default @Component class App extends Vue {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 h1 {
-    font-weight: normal;
+    font-size: 1.5rem;
     text-transform: uppercase;
+    font-weight: normal;
+}
+span.error{
+    color:#e74c3c;
+    font-size:20px;
+    display:flex;
+    justify-content:center;
+}
+.form .extraFields {
+    display: flex;
+    flex-direction: 'row';
+    justify-content: 'flex-start';
+    width: 100%;
 }
 </style>
